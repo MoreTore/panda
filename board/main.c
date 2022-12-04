@@ -79,15 +79,15 @@ void set_safety_mode(uint16_t mode, uint16_t param) {
   switch (mode_copy) {
     case SAFETY_SILENT:
       set_intercept_relay(false);
-      if (current_board->has_obd) {
-        current_board->set_can_mode(CAN_MODE_OBD_CAN2);
+      if (current_board->has_obd && use_obd) {
+        current_board->set_can_mode(CAN_MODE_NORMAL);
       }
       can_silent = ALL_CAN_SILENT;
       break;
     case SAFETY_NOOUTPUT:
       set_intercept_relay(false);
-      if (current_board->has_obd) {
-        current_board->set_can_mode(CAN_MODE_OBD_CAN2);
+      if (current_board->has_obd && use_obd) {
+        current_board->set_can_mode(CAN_MODE_NORMAL);
       }
       can_silent = ALL_CAN_LIVE;
       break;
@@ -95,11 +95,11 @@ void set_safety_mode(uint16_t mode, uint16_t param) {
       set_intercept_relay(false);
       heartbeat_counter = 0U;
       heartbeat_lost = false;
-      if (current_board->has_obd) {
+      if (current_board->has_obd && use_obd) {
         if (param == 0U) {
           current_board->set_can_mode(CAN_MODE_OBD_CAN2);
         } else {
-          current_board->set_can_mode(CAN_MODE_OBD_CAN2);
+          current_board->set_can_mode(CAN_MODE_NORMAL);
         }
       }
       can_silent = ALL_CAN_LIVE;
@@ -109,7 +109,7 @@ void set_safety_mode(uint16_t mode, uint16_t param) {
       heartbeat_counter = 0U;
       heartbeat_lost = false;
       if (current_board->has_obd) {
-        current_board->set_can_mode(CAN_MODE_OBD_CAN2);
+        current_board->set_can_mode(CAN_MODE_NORMAL);
       }
       can_silent = ALL_CAN_LIVE;
       break;
@@ -255,6 +255,7 @@ void tick_handler(void) {
       // set ignition_can to false after 2s of no CAN seen
       if (ignition_can_cnt > 2U) {
         ignition_can = false;
+        use_obd = true; // Reset to use OBD
       }
 
       // on to the next one

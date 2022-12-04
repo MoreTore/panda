@@ -192,9 +192,9 @@ class Panda:
   HW_TYPE_TRES = b'\x09'
 
   CAN_PACKET_VERSION = 2
-  HEALTH_PACKET_VERSION = 11
+  HEALTH_PACKET_VERSION = 12
   CAN_HEALTH_PACKET_VERSION = 3
-  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBB")
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBBHBBBHfBB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIHHBBB")
 
   F2_DEVICES = (HW_TYPE_PEDAL, )
@@ -476,18 +476,19 @@ class Panda:
       "faults": a[8],
       "ignition_line": a[9],
       "ignition_can": a[10],
-      "controls_allowed": a[11],
-      "gas_interceptor_detected": a[12],
-      "car_harness_status": a[13],
-      "safety_mode": a[14],
-      "safety_param": a[15],
-      "fault_status": a[16],
-      "power_save_enabled": a[17],
-      "heartbeat_lost": a[18],
-      "alternative_experience": a[19],
-      "interrupt_load": a[20],
-      "fan_power": a[21],
-      "safety_rx_checks_invalid": a[22],
+      "use_obd": a[11],
+      "controls_allowed": a[12],
+      "gas_interceptor_detected": a[13],
+      "car_harness_status": a[14],
+      "safety_mode": a[15],
+      "safety_param": a[16],
+      "fault_status": a[17],
+      "power_save_enabled": a[18],
+      "heartbeat_lost": a[19],
+      "alternative_experience": a[20],
+      "interrupt_load": a[21],
+      "fan_power": a[22],
+      "safety_rx_checks_invalid": a[23],
     }
 
   @ensure_can_health_packet_version

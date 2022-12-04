@@ -89,6 +89,7 @@ namespace panda {
 		uint32_t faults;
 		uint8_t ignition_line;
 		uint8_t ignition_can;
+		uint8_t use_obd;
 		uint8_t controls_allowed;
 		uint8_t gas_interceptor_detected;
 		uint8_t car_harness_status;
