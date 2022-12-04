@@ -25,6 +25,7 @@ can_health_t can_health[] = {{0}, {0}, {0}};
 
 extern int can_live;
 extern int pending_can_live;
+extern bool use_obd;
 
 // must reinit after changing these
 extern int can_loopback;
@@ -33,6 +34,8 @@ extern int can_silent;
 // Ignition detected from CAN meessages
 bool ignition_can = false;
 uint32_t ignition_can_cnt = 0U;
+// Is the OBD port used for fingerprinting?
+bool use_obd = true;
 
 #define ALL_CAN_SILENT 0xFF
 #define ALL_CAN_LIVE 0
@@ -217,8 +220,8 @@ void ignition_can_hook(CANPacket_t *to_push) {
     // Newer Mazda exception
     if ((addr == 0x44D) && (len == 8)) {
       ignition_can = ((GET_BYTE(to_push, 0)) & 0x10U);
+      use_obd = false; // New Mazda has OBD connection hardwired to bus 1 on harness
     }
-
   }
 }
 
