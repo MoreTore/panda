@@ -210,11 +210,14 @@ void ignition_can_hook(CANPacket_t *to_push) {
       ignition_can = (GET_BYTE(to_push, 0) & 0x1U) != 0U;
     }
 
-    // Mazda exception
+    // GEN1 Mazda exception
     if ((addr == 0x9E) && (len == 8)) {
       ignition_can = (GET_BYTE(to_push, 0) >> 5) == 0x6U;
     }
-
+    // GEN2 Mazda exception
+    if((addr == 0x436) && (len == 8)) {
+      ignition_can = GET_BYTE(to_push, 5) && 0x10U;
+    }
   }
 }
 
