@@ -158,7 +158,7 @@ const SteeringLimits MAZDA_2019_STEERING_LIMITS = {
   .max_steer = 8000,
   .max_rate_up = 45,
   .max_rate_down = 80,
-  .max_rt_delta = 3500,
+  .max_rt_delta = 844, // 45*50hz*250000/1000000*1.5
   .max_rt_interval = 250000,
   .driver_torque_factor = 1,
   .driver_torque_allowance = 1400,
@@ -225,7 +225,7 @@ static int mazda_2019_rx_hook(CANPacket_t *to_push) {
       case MAZDA_AUX:
         switch (addr) {
           case MAZDA_2019_STEER_TORQUE:
-            update_sample(&torque_driver, GET_BYTE(to_push, 0) << 8 | GET_BYTE(to_push, 1));
+            update_sample(&torque_driver, (int16_t)(GET_BYTE(to_push, 0) << 8 | GET_BYTE(to_push, 1)));
             break; // end TI2_STEER_TORQUE
           
           default: // default address aux
@@ -252,7 +252,7 @@ static int mazda_2019_tx_hook(CANPacket_t *to_send) {
   }
   if (bus == MAZDA_AUX) {
     if (addr == MAZDA_2019_LKAS) {
-      int desired_torque = ((GET_BYTE(to_send, 0) << 8) | GET_BYTE(to_send, 1)); // signal is signed
+      int desired_torque = (int16_t)((GET_BYTE(to_send, 0) << 8) | GET_BYTE(to_send, 1)); // signal is signed
       if (steer_torque_cmd_checks(desired_torque, -1, MAZDA_2019_STEERING_LIMITS)) {
         tx = 0;
       }
