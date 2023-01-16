@@ -153,6 +153,7 @@ const safety_hooks mazda_hooks = {
 #define MAZDA_2019_LKAS           0x249 // aux bus. DBC: EPS_LKAS
 #define MAZDA_2019_CRZ_BTNS       0x9d  // rx on main tx on camera. DBC: CRZ_BTNS
 #define MAZDA_2019_ACC            0x220 // main bus. DBC: ACC
+#define MAZDA_2019_BLINKER        0x91  // rx on main tx on 2. DBC: BLINK_INFO 10hz 
 
 const SteeringLimits MAZDA_2019_STEERING_LIMITS = {
   .max_steer = 8000,
@@ -165,9 +166,8 @@ const SteeringLimits MAZDA_2019_STEERING_LIMITS = {
   .type = TorqueDriverLimited,
 };
 
-const CanMsg MAZDA_2019_TX_MSGS[] = {{MAZDA_2019_LKAS, 1, 8}, {MAZDA_2019_ACC, 2, 8}};
+const CanMsg MAZDA_2019_TX_MSGS[] = {{MAZDA_2019_LKAS, 1, 8}, {MAZDA_2019_ACC, 2, 8}, {MAZDA_2019_BLINKER, 2, 8}};
 
-// start with high expected_timestep
 AddrCheckStruct mazda_2019_addr_checks[] = {
   {.msg = {{MAZDA_2019_BRAKE,     0, 8, .expected_timestep = 50000U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_2019_GAS,       2, 8, .expected_timestep = 10000U}, { 0 }, { 0 }}},
@@ -269,6 +269,7 @@ static int mazda_2019_fwd_hook(int bus, CANPacket_t *to_fwd) {
   
   if (bus == MAZDA_MAIN) {
     block = (addr == MAZDA_2019_ACC);
+    block |= (addr == MAZDA_2019_BLINKER);
     if (!block) {
       bus_fwd = MAZDA_CAM;
     }
