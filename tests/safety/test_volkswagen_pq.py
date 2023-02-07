@@ -2,7 +2,7 @@
 import numpy as np
 import unittest
 from panda import Panda
-from panda.tests.safety import libpandasafety_py
+from panda.tests.libpanda import libpanda_py
 import panda.tests.safety.common as common
 from panda.tests.safety.common import CANPackerPanda
 
@@ -23,7 +23,7 @@ MIN_ACCEL = -3.5
 class TestVolkswagenPqSafety(common.PandaSafetyTest, common.DriverTorqueSteeringSafetyTest):
   cruise_engaged = False
 
-  STANDSTILL_THRESHOLD = 1
+  STANDSTILL_THRESHOLD = 0
   RELAY_MALFUNCTION_ADDR = MSG_HCA_1
   RELAY_MALFUNCTION_BUS = 0
 
@@ -128,7 +128,7 @@ class TestVolkswagenPqStockSafety(TestVolkswagenPqSafety):
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_golf_mk4")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_VOLKSWAGEN_PQ, 0)
     self.safety.init_tests()
 
@@ -150,7 +150,7 @@ class TestVolkswagenPqLongSafety(TestVolkswagenPqSafety):
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_golf_mk4")
-    self.safety = libpandasafety_py.libpandasafety
+    self.safety = libpanda_py.libpanda
     self.safety.set_safety_hooks(Panda.SAFETY_VOLKSWAGEN_PQ, Panda.FLAG_VOLKSWAGEN_LONG_CONTROL)
     self.safety.init_tests()
 

@@ -1,22 +1,24 @@
 #include "safety_hyundai_common.h"
 
-const SteeringLimits HYUNDAI_STEERING_LIMITS = {
-  .max_steer = 384,
-  .max_rt_delta = 112,
-  .max_rt_interval = 250000,
-  .max_rate_up = 3,
-  .max_rate_down = 7,
-  .driver_torque_allowance = 50,
-  .driver_torque_factor = 2,
-  .type = TorqueDriverLimited,
+#define HYUNDAI_LIMITS(steer, rate_up, rate_down) { \
+  .max_steer = (steer), \
+  .max_rate_up = (rate_up), \
+  .max_rate_down = (rate_down), \
+  .max_rt_delta = 112, \
+  .max_rt_interval = 250000, \
+  .driver_torque_allowance = 50, \
+  .driver_torque_factor = 2, \
+  .type = TorqueDriverLimited, \
+   /* the EPS faults when the steering angle is above a certain threshold for too long. to prevent this, */ \
+   /* we allow setting CF_Lkas_ActToi bit to 0 while maintaining the requested torque value for two consecutive frames */ \
+  .min_valid_request_frames = 89, \
+  .max_invalid_request_frames = 2, \
+  .min_valid_request_rt_interval = 810000,  /* 810ms; a ~10% buffer on cutting every 90 frames */ \
+  .has_steer_req_tolerance = true, \
+}
 
-  // the EPS faults when the steering angle is above a certain threshold for too long. to prevent this,
-  // we allow setting CF_Lkas_ActToi bit to 0 while maintaining the requested torque value for two consecutive frames
-  .min_valid_request_frames = 89,
-  .max_invalid_request_frames = 2,
-  .min_valid_request_rt_interval = 810000,  // 810ms; a ~10% buffer on cutting every 90 frames
-  .has_steer_req_tolerance = true,
-};
+const SteeringLimits HYUNDAI_STEERING_LIMITS = HYUNDAI_LIMITS(384, 3, 7);
+const SteeringLimits HYUNDAI_STEERING_LIMITS_ALT = HYUNDAI_LIMITS(270, 2, 3);
 
 const LongitudinalLimits HYUNDAI_LONG_LIMITS = {
   .max_accel = 200,   // 1/100 m/s2
@@ -227,7 +229,7 @@ static int hyundai_rx_hook(CANPacket_t *to_push) {
   return valid;
 }
 
-static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
+static int hyundai_tx_hook(CANPacket_t *to_send) {
 
   int tx = 1;
   int addr = GET_ADDR(to_send);
@@ -261,8 +263,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
 
     bool violation = false;
 
-    violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS, longitudinal_allowed);
-    violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS, longitudinal_allowed);
+    violation |= longitudinal_accel_checks(desired_accel_raw, HYUNDAI_LONG_LIMITS);
+    violation |= longitudinal_accel_checks(desired_accel_val, HYUNDAI_LONG_LIMITS);
     violation |= (aeb_decel_cmd != 0);
     violation |= (aeb_req != 0);
 
@@ -276,7 +278,8 @@ static int hyundai_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     int desired_torque = ((GET_BYTES_04(to_send) >> 16) & 0x7ffU) - 1024U;
     bool steer_req = GET_BIT(to_send, 27U) != 0U;
 
-    if (steer_torque_cmd_checks(desired_torque, steer_req, HYUNDAI_STEERING_LIMITS)) {
+    const SteeringLimits limits = hyundai_alt_limits ? HYUNDAI_STEERING_LIMITS_ALT : HYUNDAI_STEERING_LIMITS;
+    if (steer_torque_cmd_checks(desired_torque, steer_req, limits)) {
       tx = 0;
     }
   }

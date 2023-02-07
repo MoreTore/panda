@@ -109,8 +109,7 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
     // Signal: Bremse_1.Geschwindigkeit_neu__Bremse_1_
     if (addr == MSG_BREMSE_1) {
       int speed = ((GET_BYTE(to_push, 2) & 0xFEU) >> 1) | (GET_BYTE(to_push, 3) << 7);
-      // DBC speed scale 0.01: 0.3m/s = 108.
-      vehicle_moving = speed > 108;
+      vehicle_moving = speed > 0;
     }
 
     // Update driver input torque samples
@@ -177,7 +176,7 @@ static int volkswagen_pq_rx_hook(CANPacket_t *to_push) {
   return valid;
 }
 
-static int volkswagen_pq_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
+static int volkswagen_pq_tx_hook(CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
   int tx = 1;
 
@@ -209,7 +208,7 @@ static int volkswagen_pq_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed
     // Signal: ACC_System.ACS_Sollbeschl (acceleration in m/s2, scale 0.005, offset -7.22)
     int desired_accel = ((((GET_BYTE(to_send, 4) & 0x7U) << 8) | GET_BYTE(to_send, 3)) * 5U) - 7220U;
 
-    if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_PQ_LONG_LIMITS, longitudinal_allowed)) {
+    if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_PQ_LONG_LIMITS)) {
       tx = 0;
     }
   }

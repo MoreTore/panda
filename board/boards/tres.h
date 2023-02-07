@@ -2,8 +2,41 @@
 // Tres + Harness //
 // /////////////////
 
+bool tres_ir_enabled;
+bool tres_fan_enabled;
+void tres_update_fan_ir_power(void) {
+  red_chiplet_set_fan_or_usb_load_switch(tres_ir_enabled || tres_fan_enabled);
+}
+
 void tres_set_ir_power(uint8_t percentage){
+  tres_ir_enabled = (percentage > 0U);
+  tres_update_fan_ir_power();
   pwm_set(TIM3, 4, percentage);
+}
+
+void tres_set_bootkick(bool enabled){
+  set_gpio_output(GPIOA, 0, !enabled);
+}
+
+bool tres_ignition_prev = false;
+void tres_board_tick(bool ignition, bool usb_enum, bool heartbeat_seen) {
+  UNUSED(usb_enum);
+  if (ignition && !tres_ignition_prev) {
+    // enable bootkick on rising edge of ignition
+    tres_set_bootkick(true);
+  } else if (heartbeat_seen) {
+    // disable once openpilot is up
+    tres_set_bootkick(false);
+  } else {
+
+  }
+  tres_ignition_prev = ignition;
+}
+
+void tres_set_fan_enabled(bool enabled) {
+  // NOTE: fan controller reset doesn't work on a tres if IR is enabled
+  tres_fan_enabled = enabled;
+  tres_update_fan_ir_power();
 }
 
 void tres_init(void) {
@@ -13,6 +46,8 @@ void tres_init(void) {
   while ((PWR->CR3 & PWR_CR3_USB33RDY) == 0);
 
   red_chiplet_init();
+
+  tres_set_bootkick(true);
 
   // SOM debugging UART
   gpio_uart7_init();
@@ -32,11 +67,20 @@ void tres_init(void) {
   set_gpio_alternate(GPIOC, 9, GPIO_AF2_TIM3);
   pwm_init(TIM3, 4);
   tres_set_ir_power(0U);
+
+  // Fake siren
+  set_gpio_alternate(GPIOC, 10, GPIO_AF4_I2C5);
+  set_gpio_alternate(GPIOC, 11, GPIO_AF4_I2C5);
+  register_set_bits(&(GPIOC->OTYPER), GPIO_OTYPER_OT10 | GPIO_OTYPER_OT11); // open drain
+  fake_siren_init();
+
+  // Clock source
+  clock_source_init();
 }
 
 const board board_tres = {
   .board_type = "Tres",
-  .board_tick = unused_board_tick,
+  .board_tick = tres_board_tick,
   .harness_config = &red_chiplet_harness_config,
   .has_gps = false,
   .has_hw_gmlan = false,
@@ -54,9 +98,8 @@ const board board_tres = {
   .set_can_mode = red_set_can_mode,
   .check_ignition = red_check_ignition,
   .read_current = unused_read_current,
-  .set_fan_enabled = red_chiplet_set_fan_or_usb_load_switch,
+  .set_fan_enabled = tres_set_fan_enabled,
   .set_ir_power = tres_set_ir_power,
   .set_phone_power = unused_set_phone_power,
-  .set_clock_source_mode = unused_set_clock_source_mode,
-  .set_siren = unused_set_siren
+  .set_siren = fake_siren_set
 };

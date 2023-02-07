@@ -1,12 +1,14 @@
-const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_UP = {
+const SteeringLimits TESLA_STEERING_LIMITS = {
+  .angle_deg_to_can = 10,
+  .angle_rate_up_lookup = {
     {2., 7., 17.},
-    {5., .8, .25}};
-
-const struct lookup_t TESLA_LOOKUP_ANGLE_RATE_DOWN = {
+    {5., .8, .25}
+  },
+  .angle_rate_down_lookup = {
     {2., 7., 17.},
-    {5., 3.5, .8}};
-
-const int TESLA_DEG_TO_CAN = 10;
+    {5., 3.5, .8}
+  },
+};
 
 const LongitudinalLimits TESLA_LONG_LIMITS = {
   .max_accel = 425,       // 2. m/s^2
@@ -115,7 +117,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
 }
 
 
-static int tesla_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
+static int tesla_tx_hook(CANPacket_t *to_send) {
 
   int tx = 1;
   int addr = GET_ADDR(to_send);
@@ -136,29 +138,7 @@ static int tesla_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     bool steer_control_enabled = (steer_control_type != 0) &&  // NONE
                                  (steer_control_type != 3);    // DISABLED
 
-    // Rate limit while steering
-    if(controls_allowed && steer_control_enabled) {
-      // Add 1 to not false trigger the violation
-      float delta_angle_float;
-      delta_angle_float = (interpolate(TESLA_LOOKUP_ANGLE_RATE_UP, vehicle_speed) * TESLA_DEG_TO_CAN);
-      int delta_angle_up = (int)(delta_angle_float) + 1;
-      delta_angle_float =  (interpolate(TESLA_LOOKUP_ANGLE_RATE_DOWN, vehicle_speed) * TESLA_DEG_TO_CAN);
-      int delta_angle_down = (int)(delta_angle_float) + 1;
-      int highest_desired_angle = desired_angle_last + ((desired_angle_last > 0) ? delta_angle_up : delta_angle_down);
-      int lowest_desired_angle = desired_angle_last - ((desired_angle_last >= 0) ? delta_angle_down : delta_angle_up);
-
-      // Check for violation;
-      violation |= max_limit_check(desired_angle, highest_desired_angle, lowest_desired_angle);
-    }
-    desired_angle_last = desired_angle;
-
-    // Angle should be the same as current angle while not steering
-    if(!controls_allowed && ((desired_angle < (angle_meas.min - 1)) || (desired_angle > (angle_meas.max + 1)))) {
-      violation = true;
-    }
-
-    // No angle control allowed when controls are not allowed
-    if(!controls_allowed && steer_control_enabled) {
+    if (steer_angle_cmd_checks(desired_angle, steer_control_enabled, TESLA_STEERING_LIMITS)) {
       violation = true;
     }
   }
@@ -188,8 +168,8 @@ static int tesla_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
       // Don't allow any acceleration limits above the safety limits
       int raw_accel_max = ((GET_BYTE(to_send, 6) & 0x1FU) << 4) | (GET_BYTE(to_send, 5) >> 4);
       int raw_accel_min = ((GET_BYTE(to_send, 5) & 0x0FU) << 5) | (GET_BYTE(to_send, 4) >> 3);
-      violation |= longitudinal_accel_checks(raw_accel_max, TESLA_LONG_LIMITS, longitudinal_allowed);
-      violation |= longitudinal_accel_checks(raw_accel_min, TESLA_LONG_LIMITS, longitudinal_allowed);
+      violation |= longitudinal_accel_checks(raw_accel_max, TESLA_LONG_LIMITS);
+      violation |= longitudinal_accel_checks(raw_accel_min, TESLA_LONG_LIMITS);
     } else {
       violation = true;
     }
