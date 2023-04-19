@@ -26,6 +26,7 @@ struct __attribute__((packed)) health_t {
   uint8_t fan_power;
   uint8_t safety_rx_checks_invalid;
   uint16_t spi_checksum_error_count;
+  uint8_t torque_interceptor_detected_pkt;
 };
 
 #define CAN_HEALTH_PACKET_VERSION 4

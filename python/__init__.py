@@ -184,7 +184,7 @@ class Panda:
   CAN_PACKET_VERSION = 4
   HEALTH_PACKET_VERSION = 12
   CAN_HEALTH_PACKET_VERSION = 4
-  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBBH")
+  HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBBHBBBHfBBHB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIIHHBBB")
 
   F2_DEVICES = (HW_TYPE_PEDAL, )
@@ -565,6 +565,7 @@ class Panda:
       "fan_power": a[21],
       "safety_rx_checks_invalid": a[22],
       "spi_checksum_error_count": a[23],
+      "torque_interceptor_detected": a[24],
     }
 
   @ensure_can_health_packet_version
