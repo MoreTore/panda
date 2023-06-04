@@ -34,6 +34,9 @@
 bool check_started(void) {
   bool started = current_board->check_ignition() || ignition_can;
   ignition_seen |= started;
+  if (ignition_can) {
+    harness.use_ignition_line = false;
+  }
   return started;
 }
 
@@ -331,6 +334,7 @@ int main(void) {
 
   // shouldn't have interrupts here, but just in case
   disable_interrupts();
+  harness.use_ignition_line = true;
 
   // init early devices
   clock_init();

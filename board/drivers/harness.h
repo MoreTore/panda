@@ -8,6 +8,7 @@ struct harness_t {
   uint16_t sbu2_voltage_mV;
   bool relay_driven;
   bool sbu_adc_lock;
+  bool use_ignition_line;
 };
 struct harness_t harness;
 
@@ -70,6 +71,7 @@ bool harness_check_ignition(void) {
     default:
       break;
   }
+  ret &=  harness.use_ignition_line;
   return ret;
 }
 
