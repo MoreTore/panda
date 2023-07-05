@@ -79,7 +79,7 @@ static int mazda_tx_hook(CANPacket_t *to_send) {
   int bus = GET_BUS(to_send);
 
   if (!msg_allowed(to_send, MAZDA_TX_MSGS, sizeof(MAZDA_TX_MSGS)/sizeof(MAZDA_TX_MSGS[0]))) {
-    tx = 0;
+    //tx = 0;
   }
 
   // Check if msg is sent on the main BUS
