@@ -195,9 +195,9 @@ static int mazda_fwd_hook(int bus, int addr) {
 }
 
 static const addr_checks* mazda_init(uint16_t param) {
-  return &mazda_rx_checks;
   radar_intercept = GET_FLAG(param, MAZDA_RADAR_INTERCEPT_MODE);
   use_crz_events = GET_FLAG(param, MAZDA_RI_USE_CRZ_EVENTS);
+  return &mazda_rx_checks;
 }
 
 const safety_hooks mazda_hooks = {
