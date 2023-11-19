@@ -25,6 +25,11 @@
 #define MAZDA_AUX  1
 #define MAZDA_CAM  2
 
+const uint16_t MAZDA_RADAR_INTERCEPT_MODE = 1;
+const uint16_t MAZDA_RI_USE_CRZ_EVENTS = 2;
+bool radar_intercept = false;
+bool use_crz_events = false;
+
 const SteeringLimits MAZDA_STEERING_LIMITS = {
   .max_steer = 800,
   .max_rate_up = 10,
@@ -82,11 +87,16 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
       update_sample(&torque_driver, torque_driver_new);
     }
 
-    // // enter controls on rising edge of ACC, exit controls on ACC off
-    // if (addr == MAZDA_CRZ_CTRL) {
-    //   bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
-    //   pcm_cruise_check(cruise_engaged);
-    // }
+    // enter controls on rising edge of ACC, exit controls on ACC off
+    if (addr == MAZDA_CRZ_CTRL && !radar_intercept && !use_crz_events) {
+      bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
+      pcm_cruise_check(cruise_engaged);
+    }
+
+    if (addr == MAZDA_CRZ_EVENTS && use_crz_events && radar_intercept) {
+      bool cruise_engaged = GET_BYTE(to_push, 2) & 0x1U;
+      pcm_cruise_check(cruise_engaged);
+    }
 
     if (addr == MAZDA_ENGINE_DATA) {
       gas_pressed = (GET_BYTE(to_push, 4) || (GET_BYTE(to_push, 5) & 0xF0U));
@@ -107,7 +117,7 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
     }
   }
 
-  if (valid && (GET_BUS(to_push) == MAZDA_CAM)) { // Use radar for cruise state
+  if (valid && (GET_BUS(to_push) == MAZDA_CAM && radar_intercept && !use_crz_events)) { // Use radar for cruise state
     int addr = GET_ADDR(to_push);
     // enter controls on rising edge of ACC, exit controls on ACC off
     if (addr == MAZDA_CRZ_CTRL) {
@@ -164,14 +174,16 @@ static int mazda_fwd_hook(int bus, int addr) {
   } else if (bus == MAZDA_CAM) {
     block |= (addr == MAZDA_LKAS);
     block |= (addr == MAZDA_LKAS_HUD);
-    block |= (addr == MAZDA_CRZ_INFO);
-    block |= (addr == MAZDA_CRZ_CTRL);
-    block |= (addr == MAZDA_RADAR_361);
-    block |= (addr == MAZDA_RADAR_362);
-    block |= (addr == MAZDA_RADAR_363);
-    block |= (addr == MAZDA_RADAR_364);
-    block |= (addr == MAZDA_RADAR_365);
-    block |= (addr == MAZDA_RADAR_366);
+    if (radar_intercept){
+      block |= (addr == MAZDA_CRZ_INFO);
+      block |= (addr == MAZDA_CRZ_CTRL);
+      block |= (addr == MAZDA_RADAR_361);
+      block |= (addr == MAZDA_RADAR_362);
+      block |= (addr == MAZDA_RADAR_363);
+      block |= (addr == MAZDA_RADAR_364);
+      block |= (addr == MAZDA_RADAR_365);
+      block |= (addr == MAZDA_RADAR_366);
+    }
     if (!block) {
       bus_fwd = MAZDA_MAIN;
     }
@@ -183,8 +195,9 @@ static int mazda_fwd_hook(int bus, int addr) {
 }
 
 static const addr_checks* mazda_init(uint16_t param) {
-  UNUSED(param);
   return &mazda_rx_checks;
+  radar_intercept = GET_FLAG(param, MAZDA_RADAR_INTERCEPT_MODE);
+  use_crz_events = GET_FLAG(param, MAZDA_RI_USE_CRZ_EVENTS);
 }
 
 const safety_hooks mazda_hooks = {
@@ -194,6 +207,8 @@ const safety_hooks mazda_hooks = {
   .tx_lin = nooutput_tx_lin_hook,
   .fwd = mazda_fwd_hook,
 };
+
+
 
 /*
   Mazda Gen 4 2019+
