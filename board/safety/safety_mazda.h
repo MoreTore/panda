@@ -26,9 +26,9 @@
 #define MAZDA_CAM  2
 
 const uint16_t MAZDA_RADAR_INTERCEPT_MODE = 1;
-const uint16_t MAZDA_RI_USE_CRZ_EVENTS = 2;
+//const uint16_t MAZDA_RI_USE_CRZ_EVENTS = 2;
 bool radar_intercept = false;
-bool use_crz_events = false;
+//bool use_crz_events = false;
 
 const SteeringLimits MAZDA_STEERING_LIMITS = {
   .max_steer = 800,
@@ -88,13 +88,8 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
     }
 
     // enter controls on rising edge of ACC, exit controls on ACC off
-    if (addr == MAZDA_CRZ_CTRL && !radar_intercept && !use_crz_events) {
+    if (addr == MAZDA_CRZ_CTRL && !radar_intercept) {
       bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
-      pcm_cruise_check(cruise_engaged);
-    }
-
-    if (addr == MAZDA_CRZ_EVENTS && use_crz_events && radar_intercept) {
-      bool cruise_engaged = GET_BYTE(to_push, 2) & 0x1U;
       pcm_cruise_check(cruise_engaged);
     }
 
@@ -104,6 +99,10 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
 
     if (addr == MAZDA_PEDALS) {
       brake_pressed = (GET_BYTE(to_push, 0) & 0x10U);
+      if (radar_intercept) {
+        bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
+        pcm_cruise_check(cruise_engaged);
+      }
     }
 
     generic_rx_checks((addr == MAZDA_LKAS));
@@ -114,15 +113,6 @@ static int mazda_rx_hook(CANPacket_t *to_push) {
     if (addr == TI_STEER_TORQUE) {
       int torque_driver_new = GET_BYTE(to_push, 0) - 126;
       update_sample(&torque_driver, torque_driver_new);
-    }
-  }
-
-  if (valid && (GET_BUS(to_push) == MAZDA_CAM && radar_intercept && !use_crz_events)) { // Use radar for cruise state
-    int addr = GET_ADDR(to_push);
-    // enter controls on rising edge of ACC, exit controls on ACC off
-    if (addr == MAZDA_CRZ_CTRL) {
-      bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
-      pcm_cruise_check(cruise_engaged);
     }
   }
   return valid;
@@ -196,7 +186,7 @@ static int mazda_fwd_hook(int bus, int addr) {
 
 static const addr_checks* mazda_init(uint16_t param) {
   radar_intercept = GET_FLAG(param, MAZDA_RADAR_INTERCEPT_MODE);
-  use_crz_events = GET_FLAG(param, MAZDA_RI_USE_CRZ_EVENTS);
+  //use_crz_events = GET_FLAG(param, MAZDA_RI_USE_CRZ_EVENTS);
   return &mazda_rx_checks;
 }
 

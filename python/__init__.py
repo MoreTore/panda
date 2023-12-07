@@ -231,7 +231,6 @@ class Panda:
   FLAG_FORD_CANFD = 2
 
   FLAG_MAZDA_RADAR_INTERCEPT_MODE = 1
-  FLAG_MAZDA_RI_USE_CRZ_EVENTS = 2
 
   def __init__(self, serial: Optional[str] = None, claim: bool = True, disable_checks: bool = True):
     self._connect_serial = serial
