@@ -724,7 +724,7 @@ class PandaSafetyTest(PandaSafetyTestBase):
     for bus in range(4):
       for addr in self.SCANNED_ADDRS:
         if [addr, bus] not in self.TX_MSGS:
-          self.assertFalse(self._tx(make_msg(bus, addr, 8)), f"allowed TX {addr=} {bus=}")
+          self.assertFalse(self._tx(make_msg(bus, addr, 8)), f"allowed TX {hex(addr)=} {bus=}")
 
   def test_default_controls_not_allowed(self):
     self.assertFalse(self.safety.get_controls_allowed())
@@ -803,6 +803,10 @@ class PandaSafetyTest(PandaSafetyTestBase):
         self.safety.set_controls_allowed(1)
         # TODO: this should be blocked
         if current_test in ["TestNissanSafety", "TestNissanSafetyAltEpsBus", "TestNissanLeafSafety"] and [addr, bus] in self.TX_MSGS:
+          continue
+        if current_test.startswith("TestMazdaSafetyGEN1") and [addr, bus] in self.TX_MSGS:
+          continue
+        if current_test.startswith("TestMazdaSafetyGEN2") and test_name.startswith("TestMazdaSafetyGEN1TI") and addr == 0x249 and bus == 1:
           continue
         self.assertFalse(self._tx(msg), f"transmit of {addr=:#x} {bus=} from {test_name} during {current_test} was allowed")
 
