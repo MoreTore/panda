@@ -207,6 +207,10 @@ void ignition_can_hook(CANPacket_t *to_push) {
       ignition_can = (GET_BYTE(to_push, 0) >> 5) == 0x6U;
       ignition_can_cnt = 0U;
     }
+    if ((addr == 0x274) && (len == 8)) {
+      ignition_can = (GET_BYTE(to_push, 5) & 0x4U) != 0U;
+      ignition_can_cnt = 0U;
+    }
 
   }
 }
