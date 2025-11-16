@@ -210,6 +210,16 @@ void ignition_can_hook(CANPacket_t *msg) {
     }
 
   }
+  if (bus == 1) {
+    int addr = GET_ADDR(msg);
+    int len = GET_LEN(msg);
+
+    // Mazda exception
+    if ((addr == 0x274) && (len == 8)) {
+      ignition_can = (msg->data[5] & 0x4U) != 0U;
+      ignition_can_cnt = 0U;
+    }
+  }
 }
 
 bool can_tx_check_min_slots_free(uint32_t min) {
